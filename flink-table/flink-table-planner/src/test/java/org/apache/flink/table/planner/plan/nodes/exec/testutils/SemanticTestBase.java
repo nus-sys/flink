@@ -19,7 +19,9 @@
 package org.apache.flink.table.planner.plan.nodes.exec.testutils;
 
 import org.apache.flink.table.api.EnvironmentSettings;
+import org.apache.flink.table.api.TableConfig;
 import org.apache.flink.table.api.TableEnvironment;
+import org.apache.flink.table.api.config.OptimizerConfigOptions;
 import org.apache.flink.table.planner.factories.TestValuesTableFactory;
 import org.apache.flink.table.test.program.ConfigOptionTestStep;
 import org.apache.flink.table.test.program.FailingSqlTestStep;
@@ -80,6 +82,8 @@ public abstract class SemanticTestBase implements TableTestProgramRunner {
     @MethodSource("supportedPrograms")
     void runSteps(TableTestProgram program) throws Exception {
         final TableEnvironment env = TableEnvironment.create(EnvironmentSettings.inStreamingMode());
+
+        applyDefaultEnvironmentOptions(env.getConfig());
 
         for (TestStep testStep : program.setupSteps) {
             runStep(testStep, env);
@@ -147,6 +151,17 @@ public abstract class SemanticTestBase implements TableTestProgramRunner {
                 }
                 break;
         }
+    }
+
+    /**
+     * Hook for subclasses to apply suite-wide default table configuration options.
+     *
+     * <p>Default implementation is a no-op. Subclasses can override to set specific options.
+     */
+    protected void applyDefaultEnvironmentOptions(TableConfig config) {
+        config.set(
+                OptimizerConfigOptions.TABLE_OPTIMIZER_NONDETERMINISTIC_UPDATE_STRATEGY,
+                OptimizerConfigOptions.NonDeterministicUpdateStrategy.TRY_RESOLVE);
     }
 
     private static Map<String, String> createSourceOptions(

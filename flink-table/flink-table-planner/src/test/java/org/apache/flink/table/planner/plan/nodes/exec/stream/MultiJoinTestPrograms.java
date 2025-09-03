@@ -19,7 +19,6 @@
 package org.apache.flink.table.planner.plan.nodes.exec.stream;
 
 import org.apache.flink.table.api.config.OptimizerConfigOptions;
-import org.apache.flink.table.api.config.TableConfigOptions;
 import org.apache.flink.table.test.program.SinkTestStep;
 import org.apache.flink.table.test.program.SourceTestStep;
 import org.apache.flink.table.test.program.TableTestProgram;
@@ -36,7 +35,6 @@ import static org.apache.flink.table.planner.plan.nodes.exec.stream.MultiJoinTes
 public class MultiJoinTestPrograms {
     public static final TableTestProgram MULTI_JOIN_THREE_WAY_LEFT_OUTER_JOIN =
             TableTestProgram.of("three-way-left-outer-join", "three way left outer join")
-                    .setupConfig(OptimizerConfigOptions.TABLE_OPTIMIZER_MULTI_JOIN_ENABLED, true)
                     .setupTableSource(USERS_SOURCE)
                     .setupTableSource(ORDERS_SOURCE)
                     .setupTableSource(PAYMENTS_SOURCE)
@@ -67,7 +65,6 @@ public class MultiJoinTestPrograms {
             TableTestProgram.of(
                             "three-way-left-outer-join-updating",
                             "three way left outer join updating")
-                    .setupConfig(OptimizerConfigOptions.TABLE_OPTIMIZER_MULTI_JOIN_ENABLED, true)
                     .setupTableSource(
                             SourceTestStep.newBuilder("Users")
                                     .addSchema(
@@ -110,7 +107,6 @@ public class MultiJoinTestPrograms {
 
     public static final TableTestProgram MULTI_JOIN_THREE_WAY_INNER_JOIN =
             TableTestProgram.of("three-way-inner-join", "three way inner join")
-                    .setupConfig(OptimizerConfigOptions.TABLE_OPTIMIZER_MULTI_JOIN_ENABLED, true)
                     .setupTableSource(USERS_SOURCE)
                     .setupTableSource(ORDERS_SOURCE)
                     .setupTableSource(PAYMENTS_SOURCE)
@@ -140,7 +136,6 @@ public class MultiJoinTestPrograms {
             TableTestProgram.of(
                             "three-way-inner-join-with-where",
                             "three way inner join with where clause")
-                    .setupConfig(OptimizerConfigOptions.TABLE_OPTIMIZER_MULTI_JOIN_ENABLED, true)
                     .setupTableSource(USERS_SOURCE)
                     .setupTableSource(ORDERS_SOURCE)
                     .setupTableSource(PAYMENTS_SOURCE)
@@ -169,7 +164,6 @@ public class MultiJoinTestPrograms {
 
     public static final TableTestProgram MULTI_JOIN_FOUR_WAY_COMPLEX =
             TableTestProgram.of("four-way-complex-updating-join", "four way complex updating join")
-                    .setupConfig(OptimizerConfigOptions.TABLE_OPTIMIZER_MULTI_JOIN_ENABLED, true)
                     .setupTableSource(
                             SourceTestStep.newBuilder("Users")
                                     .addSchema(
@@ -388,7 +382,6 @@ public class MultiJoinTestPrograms {
             TableTestProgram.of(
                             "three-way-inner-join-no-join-key",
                             "three way inner join with no join key")
-                    .setupConfig(OptimizerConfigOptions.TABLE_OPTIMIZER_MULTI_JOIN_ENABLED, true)
                     .setupTableSource(USERS_SOURCE)
                     .setupTableSource(ORDERS_SOURCE)
                     .setupTableSource(PAYMENTS_SOURCE)
@@ -463,7 +456,6 @@ public class MultiJoinTestPrograms {
                             "four-way-join-no-common-join-key-with-restore",
                             "four way join no common join key with restore")
                     .setupConfig(OptimizerConfigOptions.TABLE_OPTIMIZER_MULTI_JOIN_ENABLED, true)
-                    .setupConfig(TableConfigOptions.PLAN_FORCE_RECOMPILE, true)
                     .setupTableSource(
                             SourceTestStep.newBuilder("Users")
                                     .addSchema(
@@ -545,7 +537,7 @@ public class MultiJoinTestPrograms {
                                             "order_id STRING",
                                             "payment_id STRING",
                                             "location STRING")
-                                    .addOption("changelog-mode", "I,UA,UB,D")
+                                    .addOption("sink-changelog-mode-enforced", "I,UA,UB,D")
                                     .consumedBeforeRestore(
                                             "+I[1, Gus, order0, 1, London]",
                                             "+I[1, Gus, order1, 1, London]",
@@ -572,7 +564,6 @@ public class MultiJoinTestPrograms {
             TableTestProgram.of(
                             "four-way-no-common-join-key-updating-join",
                             "four way no common join key updating join")
-                    .setupConfig(OptimizerConfigOptions.TABLE_OPTIMIZER_MULTI_JOIN_ENABLED, true)
                     .setupTableSource(
                             SourceTestStep.newBuilder("Users")
                                     .addSchema(
@@ -650,7 +641,7 @@ public class MultiJoinTestPrograms {
                                             "order_id STRING",
                                             "payment_id STRING",
                                             "location STRING")
-                                    .addOption("changelog-mode", "I,UA,UB,D")
+                                    .addOption("sink-changelog-mode-enforced", "I,UA,UB,D")
                                     .consumedValues(
                                             "+I[1, Gus, order0, 1, London]",
                                             "+I[1, Gus, order1, 1, London]",
@@ -676,7 +667,6 @@ public class MultiJoinTestPrograms {
                             "four-way-complex-updating-join-with-restore",
                             "four way complex updating join with restore")
                     .setupConfig(OptimizerConfigOptions.TABLE_OPTIMIZER_MULTI_JOIN_ENABLED, true)
-                    .setupConfig(TableConfigOptions.PLAN_FORCE_RECOMPILE, true)
                     .setupTableSource(
                             SourceTestStep.newBuilder("Users")
                                     .addSchema(
@@ -758,7 +748,7 @@ public class MultiJoinTestPrograms {
                                             "order_id STRING",
                                             "payment_id STRING",
                                             "location STRING")
-                                    .addOption("changelog-mode", "I,UA,UB,D")
+                                    .addOption("sink-changelog-mode-enforced", "I,UA,UB,D")
                                     .consumedBeforeRestore(
                                             "+I[1, Gus, order0, payment1, London]",
                                             "+I[1, Gus, order1, payment1, London]",
@@ -784,7 +774,6 @@ public class MultiJoinTestPrograms {
             TableTestProgram.of(
                             "three-way-join-with-time-attributes",
                             "three way join with time attributes materialization")
-                    .setupConfig(OptimizerConfigOptions.TABLE_OPTIMIZER_MULTI_JOIN_ENABLED, true)
                     .setupTableSource(
                             SourceTestStep.newBuilder("UsersWithProctime")
                                     .addSchema(
@@ -907,4 +896,195 @@ public class MultiJoinTestPrograms {
                                             + "INNER JOIN OrdersWithRowtime o ON u.user_id_0 = o.user_id_1 "
                                             + "INNER JOIN Payments p ON u.user_id_0 = p.user_id_2")
                             .build();
+
+    public static final TableTestProgram MULTI_JOIN_MIXED_CHANGELOG_MODES =
+            TableTestProgram.of(
+                            "three-way-mixed-changelog-modes",
+                            "three way join with mixed changelog modes and primary key configurations")
+                    .setupTableSource(
+                            SourceTestStep.newBuilder("AppendTable")
+                                    .addSchema("id STRING PRIMARY KEY NOT ENFORCED, val STRING")
+                                    .addOption("changelog-mode", "I")
+                                    .producedValues(
+                                            Row.ofKind(RowKind.INSERT, "1", "append1"),
+                                            Row.ofKind(RowKind.INSERT, "2", "append2"),
+                                            Row.ofKind(RowKind.INSERT, "3", "append3"))
+                                    .build())
+                    .setupTableSource(
+                            SourceTestStep.newBuilder("RetractTable")
+                                    .addSchema("ref_id STRING, data STRING")
+                                    .addOption("changelog-mode", "I,UA,UB,D")
+                                    .producedValues(
+                                            Row.ofKind(RowKind.INSERT, "1", "retract1"),
+                                            Row.ofKind(RowKind.INSERT, "2", "retract2"),
+                                            Row.ofKind(RowKind.INSERT, "3", "retract3"),
+                                            Row.ofKind(RowKind.DELETE, "3", "retract3"),
+                                            Row.ofKind(RowKind.INSERT, "1", "retract1_new"))
+                                    .build())
+                    .setupTableSource(
+                            SourceTestStep.newBuilder("UpsertTable")
+                                    .addSchema(
+                                            "key_id STRING PRIMARY KEY NOT ENFORCED, status STRING")
+                                    .addOption("changelog-mode", "I,UA,D")
+                                    .producedValues(
+                                            Row.ofKind(RowKind.INSERT, "1", "active"),
+                                            Row.ofKind(RowKind.INSERT, "2", "pending"),
+                                            Row.ofKind(RowKind.UPDATE_AFTER, "2", "active"),
+                                            Row.ofKind(RowKind.INSERT, "3", "inactive"),
+                                            Row.ofKind(RowKind.DELETE, "3", "inactive"))
+                                    .build())
+                    .setupTableSink(
+                            SinkTestStep.newBuilder("sink")
+                                    .addSchema(
+                                            "id STRING",
+                                            "val STRING",
+                                            "data STRING",
+                                            "status STRING")
+                                    .addOption("sink-changelog-mode-enforced", "I,UA,UB,D")
+                                    .consumedValues(
+                                            "+I[1, append1, retract1, active]",
+                                            "+I[2, append2, retract2, active]",
+                                            "+I[1, append1, retract1_new, active]",
+                                            "+I[3, append3, null, null]")
+                                    .testMaterializedData()
+                                    .build())
+                    .runSql(
+                            "INSERT INTO sink "
+                                    + "SELECT a.id, a.val, r.data, u.status "
+                                    + "FROM AppendTable a "
+                                    + "LEFT JOIN RetractTable r ON a.id = r.ref_id "
+                                    + "LEFT JOIN UpsertTable u ON a.id = u.key_id")
+                    .build();
+
+    public static final TableTestProgram MULTI_JOIN_THREE_WAY_LEFT_OUTER_JOIN_WITH_CTE =
+            TableTestProgram.of(
+                            "left-outer-join-with-cte",
+                            "CTE with three-way left outer join and aggregation")
+                    .setupTableSource(USERS_SOURCE)
+                    .setupTableSource(
+                            SourceTestStep.newBuilder("Orders")
+                                    .addSchema(
+                                            "user_id STRING",
+                                            "order_id STRING PRIMARY KEY NOT ENFORCED",
+                                            "product STRING")
+                                    .addOption("changelog-mode", "I, UA,D")
+                                    .producedValues(
+                                            Row.ofKind(RowKind.INSERT, "2", "order2", "Product B"),
+                                            Row.ofKind(
+                                                    RowKind.UPDATE_AFTER,
+                                                    "2",
+                                                    "order2",
+                                                    "Product B"),
+                                            Row.ofKind(
+                                                    RowKind.UPDATE_AFTER,
+                                                    "2",
+                                                    "order2",
+                                                    "Product C"),
+                                            Row.ofKind(
+                                                    RowKind.UPDATE_AFTER,
+                                                    "2",
+                                                    "order2",
+                                                    "Product C"))
+                                    .build())
+                    .setupTableSource(PAYMENTS_SOURCE)
+                    .setupTableSink(
+                            SinkTestStep.newBuilder("sink")
+                                    .addSchema("user_id STRING", "name STRING", "cnt BIGINT")
+                                    .testMaterializedData()
+                                    .consumedValues(Row.of("1", "Gus", 2), Row.of("2", "Bob", 1))
+                                    .build())
+                    .runSql(
+                            "INSERT INTO sink WITH "
+                                    + "    order_details AS ( "
+                                    + "        SELECT o.user_id "
+                                    + "        FROM Orders o "
+                                    + "    ), "
+                                    + "    user_elements AS ( "
+                                    + "        SELECT "
+                                    + "            u.id AS user_id "
+                                    + "        FROM ( "
+                                    + "          SELECT '2' AS id, '2' AS order_user_id "
+                                    + "          UNION ALL "
+                                    + "          SELECT '1' AS id, '2' AS order_user_id "
+                                    + "          UNION ALL "
+                                    + "          SELECT '5' AS id, '5' AS order_user_id "
+                                    + "        ) u "
+                                    + "        LEFT JOIN order_details od "
+                                    + "            ON od.user_id = u.order_user_id "
+                                    + "    ) "
+                                    + "SELECT ue.user_id, us.name, COUNT(*) AS cnt "
+                                    + "FROM user_elements ue "
+                                    + "INNER JOIN Users us ON ue.user_id = us.user_id "
+                                    + "LEFT JOIN Payments p ON ue.user_id = p.user_id "
+                                    + "GROUP BY ue.user_id, us.name")
+                    .build();
+
+    public static final TableTestProgram MULTI_JOIN_LEFT_OUTER_WITH_NULL_KEYS =
+            TableTestProgram.of(
+                            "three-way-left-outer-with-null-keys",
+                            "left outer join with NULL keys on multiple inputs")
+                    .setupSql(
+                            "CREATE VIEW UsersNulls AS SELECT * FROM (VALUES "
+                                    + "('1','Gus'),"
+                                    + "(CAST(NULL AS STRING), 'NullUser')"
+                                    + ") AS T(user_id, name)")
+                    .setupSql(
+                            "CREATE VIEW OrdersNulls AS SELECT * FROM (VALUES "
+                                    + "('1','order1'),"
+                                    + "(CAST(NULL AS STRING), 'nullOrder')"
+                                    + ") AS T(user_id, order_id)")
+                    .setupSql(
+                            "CREATE VIEW PaymentsNulls AS SELECT * FROM (VALUES "
+                                    + "('1','payment1'),"
+                                    + "('1','payment3'),"
+                                    + "(CAST(NULL AS STRING), 'paymentNull')"
+                                    + ") AS T(user_id, payment_id)")
+                    .setupTableSink(
+                            SinkTestStep.newBuilder("sink")
+                                    .addSchema(
+                                            "user_id STRING",
+                                            "name STRING",
+                                            "order_id STRING",
+                                            "payment_id STRING")
+                                    .consumedValues(
+                                            "+I[1, Gus, order1, payment1]",
+                                            "+I[1, Gus, order1, payment3]",
+                                            "+I[null, NullUser, null, null]")
+                                    .testMaterializedData()
+                                    .build())
+                    .runSql(
+                            "INSERT INTO sink "
+                                    + "SELECT u.user_id, u.name, o.order_id, p.payment_id "
+                                    + "FROM UsersNulls u "
+                                    + "LEFT JOIN OrdersNulls o ON u.user_id = o.user_id "
+                                    + "LEFT JOIN PaymentsNulls p ON u.user_id = p.user_id")
+                    .build();
+
+    public static final TableTestProgram MULTI_JOIN_NULL_SAFE_JOIN_WITH_NULL_KEYS =
+            TableTestProgram.of(
+                            "null-safe-join-with-null-keys",
+                            "join with IS NOT DISTINCT FROM to match NULL keys")
+                    .setupSql(
+                            "CREATE VIEW UsersNullSafe AS SELECT * FROM (VALUES "
+                                    + "('1','Gus'),"
+                                    + "(CAST(NULL AS STRING), 'NullUser')"
+                                    + ") AS T(user_id, name)")
+                    .setupSql(
+                            "CREATE VIEW OrdersNullSafe AS SELECT * FROM (VALUES "
+                                    + "('1','order1'),"
+                                    + "(CAST(NULL AS STRING), 'nullOrder')"
+                                    + ") AS T(user_id, order_id)")
+                    .setupTableSink(
+                            SinkTestStep.newBuilder("sink")
+                                    .addSchema("user_id STRING", "name STRING", "order_id STRING")
+                                    .consumedValues(
+                                            "+I[1, Gus, order1]", "+I[null, NullUser, nullOrder]")
+                                    .testMaterializedData()
+                                    .build())
+                    .runSql(
+                            "INSERT INTO sink "
+                                    + "SELECT u.user_id, u.name, o.order_id "
+                                    + "FROM UsersNullSafe u "
+                                    + "INNER JOIN OrdersNullSafe o ON u.user_id IS NOT DISTINCT FROM o.user_id")
+                    .build();
 }

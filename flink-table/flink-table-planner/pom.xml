@@ -96,7 +96,6 @@ under the License.
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.12.0</version>
 			<optional>${flink.markBundledAsOptional}</optional>
 		</dependency>
 		<dependency>
@@ -166,6 +165,13 @@ under the License.
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-test-utils</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-test-utils-connector</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>

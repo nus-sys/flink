@@ -819,7 +819,7 @@ Check out more details at [Catalogs]({{< ref "docs/dev/table/catalogs" >}}).
 ```sql
 CREATE DATABASE [IF NOT EXISTS] [catalog_name.]db_name
   [COMMENT database_comment]
-  WITH (key1=val1, key2=val2, ...)
+  [WITH (key1=val1, key2=val2, ...)]
 ```
 
 Create a database with the given database properties. If a database with the same name already exists in the catalog, an exception is thrown.
@@ -860,6 +860,7 @@ CREATE [TEMPORARY|TEMPORARY SYSTEM] FUNCTION
   [IF NOT EXISTS] [catalog_name.][db_name.]function_name 
   AS identifier [LANGUAGE JAVA|SCALA|PYTHON] 
   [USING JAR '<path_to_filename>.jar' [, JAR '<path_to_filename>.jar']* ]
+  [WITH (key1=val1, key2=val2, ...)]
 ```
 
 Create a catalog function that has catalog and database namespaces with the identifier and optional language tag. If a function with the same name already exists in the catalog, an exception is thrown.
