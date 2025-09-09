@@ -110,6 +110,8 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
 
     @Nonnull private State state;
 
+    private final CxlConnector cxlConnector;
+
     PekkoRpcActor(
             final T rpcEndpoint,
             final CompletableFuture<Boolean> terminationFuture,
@@ -136,6 +138,12 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
                                         "RpcEndpoint %s has not been properly stopped.",
                                         rpcEndpoint.getEndpointId())));
         this.state = StoppedState.STOPPED;
+        try {
+            this.cxlConnector = new CxlConnector();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to initialize CXL");
+        }
+        System.out.println("CXL: create rpc actor " + rpcEndpoint.getEndpointId());
     }
 
     @Override
@@ -283,6 +291,18 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
      * @param rpcInvocation Rpc invocation message
      */
     private void handleRpcInvocation(RpcInvocation rpcInvocation) {
+        System.out.println(
+                "CXL: handle RPC invocation"
+                        + rpcInvocation.getMethodName()
+                        + " "
+                        + rpcEndpoint.getEndpointId());
+        RpcInvocation ri;
+        try {
+            ri = (RpcInvocation) cxlConnector.parseInvocation();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse CXL rpc invocation");
+        }
+
         Method rpcMethod = null;
 
         try {
@@ -348,6 +368,7 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
 
     private void sendSyncResponse(
             Object response, String methodName, boolean isLocalRpcInvocation) {
+        System.out.println("CXL: Send sync response");
         if (isRemoteSender(getSender()) || (forceSerialization && !isLocalRpcInvocation)) {
             Either<RpcSerializedValue, RpcException> serializedResult =
                     serializeRemoteResultAndVerifySize(response, methodName);
@@ -364,6 +385,7 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
 
     private void sendAsyncResponse(
             CompletableFuture<?> asyncResponse, String methodName, boolean isLocalRpcInvocation) {
+        System.out.println("CXL: Send async response");
         final ActorRef sender = getSender();
         Promise.DefaultPromise<Object> promise = new Promise.DefaultPromise<>();
 
@@ -379,6 +401,7 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
                                             serializeRemoteResultAndVerifySize(value, methodName);
 
                                     if (serializedResult.isLeft()) {
+                                        System.out.println("CXL: Serialize result");
                                         promise.success(serializedResult.left());
                                     } else {
                                         promise.failure(serializedResult.right());

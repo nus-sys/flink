@@ -98,6 +98,8 @@ class PekkoInvocationHandler implements InvocationHandler, PekkoBasedEndpoint, R
 
     private final boolean captureAskCallStack;
 
+    private final CxlConnector cxlConnector;
+
     PekkoInvocationHandler(
             String address,
             String hostname,
@@ -119,6 +121,12 @@ class PekkoInvocationHandler implements InvocationHandler, PekkoBasedEndpoint, R
         this.forceRpcInvocationSerialization = forceRpcInvocationSerialization;
         this.terminationFuture = terminationFuture;
         this.captureAskCallStack = captureAskCallStack;
+        try {
+            this.cxlConnector = new CxlConnector();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to initialize CXL");
+        }
+        System.out.println("CXL: create invocation handler " + address + " " + hostname);
     }
 
     @Override
@@ -215,6 +223,7 @@ class PekkoInvocationHandler implements InvocationHandler, PekkoBasedEndpoint, R
      * @throws Exception if the RPC invocation fails
      */
     private Object invokeRpc(Method method, Object[] args) throws Exception {
+        System.out.println("CXL: invoke RPC " + method.getName() + " " + address + " " + hostname);
         String methodName = method.getName();
         Class<?>[] parameterTypes = method.getParameterTypes();
         final boolean isLocalRpcInvocation = method.getAnnotation(Local.class) != null;
@@ -233,6 +242,10 @@ class PekkoInvocationHandler implements InvocationHandler, PekkoBasedEndpoint, R
         Class<?> returnType = method.getReturnType();
 
         final Object result;
+
+        if (rpcInvocation instanceof RemoteRpcInvocation) {
+            cxlConnector.invoke(rpcInvocation);
+        }
 
         if (Objects.equals(returnType, Void.TYPE)) {
             tell(rpcInvocation);
@@ -360,6 +373,7 @@ class PekkoInvocationHandler implements InvocationHandler, PekkoBasedEndpoint, R
 
     private static Object deserializeValueIfNeeded(
             Object o, Method method, ClassLoader flinkClassLoader) {
+        System.out.println("CXL: Deserialize result");
         if (o instanceof RpcSerializedValue) {
             try {
                 return ((RpcSerializedValue) o).deserializeValue(flinkClassLoader);
