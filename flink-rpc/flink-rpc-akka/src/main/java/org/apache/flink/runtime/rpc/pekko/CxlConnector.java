@@ -23,33 +23,25 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 class CxlConnector {
-    private static final String CXLPATH = "/mnt/cxl/shm";
-    private static final int SHMSIZE = 1024 * 1024; // Default SHM size 1MB
-    private final MappedByteBuffer shm;
-
-    CxlConnector() throws IOException {
-        Path file = Path.of(System.getProperty("file", CXLPATH));
-
-        try (FileChannel ch =
-                FileChannel.open(
-                        file,
-                        StandardOpenOption.CREATE,
-                        StandardOpenOption.READ,
-                        StandardOpenOption.WRITE)) {
-            if (ch.size() != SHMSIZE) {
-                ch.truncate(SHMSIZE);
-            }
-            this.shm = ch.map(FileChannel.MapMode.READ_WRITE, 0, SHMSIZE);
-        }
+    static {
+        System.loadLibrary("cxlconnector");
     }
 
-    public void invoke(Object invocation) throws IOException {
+    private final long cxlConnector;
+
+    CxlConnector() {
+        cxlConnector = create();
+    }
+
+    public int getPosition() {
+        return get_position(cxlConnector);
+    }
+
+    public void invoke(Object invocation, int position) throws IOException {
         byte[] payload;
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(baos)) {
@@ -57,19 +49,33 @@ class CxlConnector {
             oos.flush();
             payload = baos.toByteArray();
         }
-        shm.position(0);
-        shm.putInt(payload.length);
-        shm.put(payload);
+        ByteBuffer direct =
+                ByteBuffer.allocateDirect(payload.length).order(ByteOrder.nativeOrder());
+        direct.put(payload).flip();
+        write_buf(cxlConnector, direct, direct.remaining(), position);
     }
 
-    public Object parseInvocation() throws IOException, ClassNotFoundException {
-        shm.position(0);
-        int len = shm.getInt();
-        byte[] payload = new byte[len];
-        shm.get(payload);
+    public Object parseInvocation(int position) throws IOException, ClassNotFoundException {
+        int size = read_size(cxlConnector, position);
+        ByteBuffer direct = ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
+        read_buf(cxlConnector, direct, size, position);
+        byte[] payload = new byte[size];
+        direct.get(payload);
 
         try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(payload))) {
             return ois.readObject();
         }
     }
+
+    private static native long create();
+
+    private static native void destroy(long obj);
+
+    private static native int get_position(long obj);
+
+    private static native void write_buf(long obj, ByteBuffer buf, int len, int position);
+
+    private static native int read_size(long obj, int position);
+
+    private static native void read_buf(long obj, ByteBuffer buf, int len, int position);
 }

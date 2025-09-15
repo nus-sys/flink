@@ -45,7 +45,8 @@ public class RemoteRpcInvocation implements RpcInvocation, Serializable {
             final String declaringClassName,
             final String methodName,
             final Class<?>[] parameterTypes,
-            final Object[] args)
+            final Object[] args,
+            final int position)
             throws IOException {
         for (int i = 0; i < (args == null ? 0 : args.length); ++i) {
             if (args[i] != null && !(args[i] instanceof Serializable)) {
@@ -61,7 +62,12 @@ public class RemoteRpcInvocation implements RpcInvocation, Serializable {
             }
         }
         methodInvocation =
-                new MethodInvocation(declaringClassName, methodName, parameterTypes, args);
+                new MethodInvocation(
+                        declaringClassName, methodName, parameterTypes, args, position);
+    }
+
+    public int getPosition() {
+        return methodInvocation.getPosition();
     }
 
     @Override
@@ -129,16 +135,19 @@ public class RemoteRpcInvocation implements RpcInvocation, Serializable {
         private String methodName;
         private Class<?>[] parameterTypes;
         private Object[] args;
+        private int position;
 
         private MethodInvocation(
                 final String declaringClassName,
                 final String methodName,
                 final Class<?>[] parameterTypes,
-                final Object[] args) {
+                final Object[] args,
+                final int position) {
             this.declaringClassName = declaringClassName;
             this.methodName = methodName;
             this.parameterTypes = Preconditions.checkNotNull(parameterTypes);
             this.args = args;
+            this.position = position;
         }
 
         String getDeclaringClassName() {
@@ -157,7 +166,12 @@ public class RemoteRpcInvocation implements RpcInvocation, Serializable {
             return args;
         }
 
+        int getPosition() {
+            return position;
+        }
+
         private void writeObject(ObjectOutputStream oos) throws IOException {
+            oos.writeInt(position);
             oos.writeUTF(declaringClassName);
             oos.writeUTF(methodName);
 
@@ -192,6 +206,7 @@ public class RemoteRpcInvocation implements RpcInvocation, Serializable {
         }
 
         private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+            position = ois.readInt();
             declaringClassName = ois.readUTF();
             methodName = ois.readUTF();
 

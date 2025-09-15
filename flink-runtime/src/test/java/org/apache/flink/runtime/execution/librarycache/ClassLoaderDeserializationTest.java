@@ -67,7 +67,8 @@ public class ClassLoaderDeserializationTest extends TestLogger {
                         },
                         new Object[] {
                             1, Class.forName(className, false, userClassLoader).newInstance()
-                        });
+                        },
+                        0);
 
         SerializedValue<RemoteRpcInvocation> serializedMethod = new SerializedValue<>(method);
 

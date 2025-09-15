@@ -29,6 +29,7 @@ import org.apache.flink.runtime.rpc.exceptions.RpcException;
 import org.apache.flink.runtime.rpc.messages.CallAsync;
 import org.apache.flink.runtime.rpc.messages.HandshakeSuccessMessage;
 import org.apache.flink.runtime.rpc.messages.RemoteHandshakeMessage;
+import org.apache.flink.runtime.rpc.messages.RemoteRpcInvocation;
 import org.apache.flink.runtime.rpc.messages.RpcInvocation;
 import org.apache.flink.runtime.rpc.messages.RunAsync;
 import org.apache.flink.runtime.rpc.pekko.exceptions.RpcInvalidStateException;
@@ -138,11 +139,7 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
                                         "RpcEndpoint %s has not been properly stopped.",
                                         rpcEndpoint.getEndpointId())));
         this.state = StoppedState.STOPPED;
-        try {
-            this.cxlConnector = new CxlConnector();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to initialize CXL");
-        }
+        this.cxlConnector = new CxlConnector();
         System.out.println("CXL: create rpc actor " + rpcEndpoint.getEndpointId());
     }
 
@@ -297,8 +294,9 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
                         + " "
                         + rpcEndpoint.getEndpointId());
         RpcInvocation ri;
+        int position = ((RemoteRpcInvocation) rpcInvocation).getPosition();
         try {
-            ri = (RpcInvocation) cxlConnector.parseInvocation();
+            ri = (RpcInvocation) cxlConnector.parseInvocation(position);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse CXL rpc invocation");
         }
@@ -306,8 +304,8 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
         Method rpcMethod = null;
 
         try {
-            String methodName = rpcInvocation.getMethodName();
-            Class<?>[] parameterTypes = rpcInvocation.getParameterTypes();
+            String methodName = ri.getMethodName();
+            Class<?>[] parameterTypes = ri.getParameterTypes();
 
             rpcMethod = lookupRpcMethod(methodName, parameterTypes);
         } catch (final NoSuchMethodException e) {
@@ -327,16 +325,14 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
                 if (rpcMethod.getReturnType().equals(Void.TYPE)) {
                     // No return value to send back
                     runWithContextClassLoader(
-                            () -> capturedRpcMethod.invoke(rpcEndpoint, rpcInvocation.getArgs()),
+                            () -> capturedRpcMethod.invoke(rpcEndpoint, ri.getArgs()),
                             flinkClassLoader);
                 } else {
                     final Object result;
                     try {
                         result =
                                 runWithContextClassLoader(
-                                        () ->
-                                                capturedRpcMethod.invoke(
-                                                        rpcEndpoint, rpcInvocation.getArgs()),
+                                        () -> capturedRpcMethod.invoke(rpcEndpoint, ri.getArgs()),
                                         flinkClassLoader);
                     } catch (InvocationTargetException e) {
                         log.debug(
@@ -619,7 +615,8 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
 
             // IMPORTANT: This only works if we don't use a restarting supervisor strategy.
             // Otherwise
-            // we would complete the future and let the actor system restart the actor with a
+            // we would complete the future and let the actor system restart the actor with
+            // a
             // completed
             // future.
             // Complete the termination future so that others know that we've stopped.

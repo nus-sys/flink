@@ -121,11 +121,7 @@ class PekkoInvocationHandler implements InvocationHandler, PekkoBasedEndpoint, R
         this.forceRpcInvocationSerialization = forceRpcInvocationSerialization;
         this.terminationFuture = terminationFuture;
         this.captureAskCallStack = captureAskCallStack;
-        try {
-            this.cxlConnector = new CxlConnector();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to initialize CXL");
-        }
+        this.cxlConnector = new CxlConnector();
         System.out.println("CXL: create invocation handler " + address + " " + hostname);
     }
 
@@ -209,7 +205,7 @@ class PekkoInvocationHandler implements InvocationHandler, PekkoBasedEndpoint, R
     }
 
     // ------------------------------------------------------------------------
-    //  Private methods
+    // Private methods
     // ------------------------------------------------------------------------
 
     /**
@@ -231,20 +227,22 @@ class PekkoInvocationHandler implements InvocationHandler, PekkoBasedEndpoint, R
         Duration futureTimeout =
                 RpcGatewayUtils.extractRpcTimeout(parameterAnnotations, args, timeout);
 
+        final int position = cxlConnector.getPosition();
         final RpcInvocation rpcInvocation =
                 createRpcInvocationMessage(
                         method.getDeclaringClass().getSimpleName(),
                         methodName,
                         isLocalRpcInvocation,
                         parameterTypes,
-                        args);
+                        args,
+                        position);
 
         Class<?> returnType = method.getReturnType();
 
         final Object result;
 
         if (rpcInvocation instanceof RemoteRpcInvocation) {
-            cxlConnector.invoke(rpcInvocation);
+            cxlConnector.invoke(rpcInvocation, position);
         }
 
         if (Objects.equals(returnType, Void.TYPE)) {
@@ -252,10 +250,13 @@ class PekkoInvocationHandler implements InvocationHandler, PekkoBasedEndpoint, R
 
             result = null;
         } else {
-            // Capture the call stack. It is significantly faster to do that via an exception than
-            // via Thread.getStackTrace(), because exceptions lazily initialize the stack trace,
+            // Capture the call stack. It is significantly faster to do that via an
+            // exception than
+            // via Thread.getStackTrace(), because exceptions lazily initialize the stack
+            // trace,
             // initially only
-            // capture a lightweight native pointer, and convert that into the stack trace lazily
+            // capture a lightweight native pointer, and convert that into the stack trace
+            // lazily
             // when needed.
             final Throwable callStackCapture = captureAskCallStack ? new Throwable() : null;
 
@@ -314,7 +315,8 @@ class PekkoInvocationHandler implements InvocationHandler, PekkoBasedEndpoint, R
             final String methodName,
             final boolean isLocalRpcInvocation,
             final Class<?>[] parameterTypes,
-            final Object[] args)
+            final Object[] args,
+            final int position)
             throws IOException {
         final RpcInvocation rpcInvocation;
 
@@ -323,14 +325,15 @@ class PekkoInvocationHandler implements InvocationHandler, PekkoBasedEndpoint, R
                     new LocalRpcInvocation(declaringClassName, methodName, parameterTypes, args);
         } else {
             rpcInvocation =
-                    new RemoteRpcInvocation(declaringClassName, methodName, parameterTypes, args);
+                    new RemoteRpcInvocation(
+                            declaringClassName, methodName, parameterTypes, args, position);
         }
 
         return rpcInvocation;
     }
 
     // ------------------------------------------------------------------------
-    //  Helper methods
+    // Helper methods
     // ------------------------------------------------------------------------
 
     /**
