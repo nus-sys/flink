@@ -294,11 +294,15 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
                         + " "
                         + rpcEndpoint.getEndpointId());
         RpcInvocation ri;
-        int position = ((RemoteRpcInvocation) rpcInvocation).getPosition();
-        try {
-            ri = (RpcInvocation) cxlConnector.parseInvocation(position);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse CXL rpc invocation");
+        if (rpcInvocation instanceof RemoteRpcInvocation) {
+            int position = ((RemoteRpcInvocation) rpcInvocation).getPosition();
+            try {
+                ri = (RpcInvocation) cxlConnector.parseInvocation(position);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to parse CXL rpc invocation");
+            }
+        } else {
+            ri = rpcInvocation;
         }
 
         Method rpcMethod = null;
