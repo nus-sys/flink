@@ -23,9 +23,30 @@
 #include <sys/mman.h>
 #include <stdexcept>
 #include <random>
+#include <immintrin.h>
 #include "org_apache_flink_runtime_rpc_pekko_CxlConnector.h"
 
 #define DAX_DEVICE_SIZE 8ULL * 1024 * 1024 * 1024
+
+static inline void sync_write(void *addr, size_t len) {
+    const size_t cacheline = 64;
+    uintptr_t p = (uintptr_t)addr & ~(cacheline - 1);
+    uintptr_t end = (uintptr_t)addr + len;
+    for (; p < end; p += cacheline) {
+        _mm_clwb((void*)p);
+    }
+    _mm_sfence();
+}
+
+static inline void sync_read(const void *addr, size_t len) {
+    const size_t cacheline = 64;
+    uintptr_t p = (uintptr_t)addr & ~(cacheline - 1);
+    uintptr_t end = (uintptr_t)addr + len;
+    for (; p < end; p += cacheline) {
+        _mm_clflush((void*)p);
+    }
+    _mm_mfence();
+}
 
 class CxlConnector {
 public:
@@ -47,14 +68,17 @@ public:
     *p = size;
     p++;
     memcpy(p, buf, size);
+    sync_write(base + pos, sizeof(int) + size);
   }
 
   int read_size(int pos) {
+    sync_read(base + pos, sizeof(int));
     int *p = (int*)(base + pos);
     return *p;
   }
 
   void read_buf(void *buf, int size, int pos) {
+    sync_read(base + pos + sizeof(int), size);
     int *p = (int*)(base + pos);
     p++;
     memcpy(buf, p, size);
