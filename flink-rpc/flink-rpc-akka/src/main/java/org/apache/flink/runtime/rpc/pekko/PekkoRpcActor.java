@@ -140,7 +140,7 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
                                         rpcEndpoint.getEndpointId())));
         this.state = StoppedState.STOPPED;
         this.cxlConnector = new CxlConnector();
-        System.out.println("CXL: create rpc actor " + rpcEndpoint.getEndpointId());
+        // System.out.println("CXL: create rpc actor " + rpcEndpoint.getEndpointId());
     }
 
     @Override
@@ -288,11 +288,8 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
      * @param rpcInvocation Rpc invocation message
      */
     private void handleRpcInvocation(RpcInvocation rpcInvocation) {
-        System.out.println(
-                "CXL: handle RPC invocation"
-                        + rpcInvocation.getMethodName()
-                        + " "
-                        + rpcEndpoint.getEndpointId());
+        // System.out.println("CXL: handle RPC invocation" + rpcInvocation.getMethodName() + " " +
+        // rpcEndpoint.getEndpointId());
         RpcInvocation ri;
         if (rpcInvocation instanceof RemoteRpcInvocation) {
             int position = ((RemoteRpcInvocation) rpcInvocation).getPosition();
@@ -368,7 +365,7 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
 
     private void sendSyncResponse(
             Object response, String methodName, boolean isLocalRpcInvocation) {
-        System.out.println("CXL: Send sync response");
+        // System.out.println("CXL: Send sync response");
         if (isRemoteSender(getSender()) || (forceSerialization && !isLocalRpcInvocation)) {
             Either<RpcSerializedValue, RpcException> serializedResult =
                     serializeRemoteResultAndVerifySize(response, methodName);
@@ -385,7 +382,7 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
 
     private void sendAsyncResponse(
             CompletableFuture<?> asyncResponse, String methodName, boolean isLocalRpcInvocation) {
-        System.out.println("CXL: Send async response");
+        // System.out.println("CXL: Send async response");
         final ActorRef sender = getSender();
         Promise.DefaultPromise<Object> promise = new Promise.DefaultPromise<>();
 
@@ -401,7 +398,7 @@ class PekkoRpcActor<T extends RpcEndpoint & RpcGateway> extends AbstractActor {
                                             serializeRemoteResultAndVerifySize(value, methodName);
 
                                     if (serializedResult.isLeft()) {
-                                        System.out.println("CXL: Serialize result");
+                                        // System.out.println("CXL: Serialize result");
                                         promise.success(serializedResult.left());
                                     } else {
                                         promise.failure(serializedResult.right());
